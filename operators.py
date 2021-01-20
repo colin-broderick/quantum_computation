@@ -1,6 +1,8 @@
 import math
 import random
 
+from builtins import round as python_round
+
 """
 Column vectors are lists of lists:
     e.g. A = [[0], [1], [2], [3]].
@@ -10,7 +12,7 @@ Matrices are lists of lists of integers, where each inner list represents a row:
     e.g. C = [[0, 1], [1, 0]] is PauliX.
 """
 
-
+## converted
 class Matrices:
     """
     A collection of standard matrices and vectors, for ease of reference.
@@ -148,6 +150,7 @@ class Matrices:
     }
 
 
+## CONVERTED
 def phase(angle):
     """
     Gives a 2x2 phase shift matrix for the given angle
@@ -160,7 +163,7 @@ def phase(angle):
         [0, a]
     ]
 
-
+### CONVERTED
 def zeroes(num_rows, num_cols=-1):
     """
     If only rows is provided, returns a matrix of all zeroes of size rows x rows. If cols is provided, returns same
@@ -177,7 +180,7 @@ def zeroes(num_rows, num_cols=-1):
         countcols = range(num_cols)
         return [[0 * i * j for i in countcols] for j in countrows]
 
-
+## CONVERTED
 def ones(num_rows, num_cols=-1):
     """
     As zeroes(), but a matrix filled with ones.
@@ -208,7 +211,7 @@ def choose_one(state_vector):
     selection = random.choices(options, weights=probabilities)[0]
     return selection
 
-
+##CNVERTED
 def eye(integer):
     """
     Gives a square eye matrix of size integer
@@ -217,7 +220,7 @@ def eye(integer):
     """
     return [[1 if i == j else 0 for i in range(integer)] for j in range(integer)]
 
-
+## CONVERTED
 def controlled(unitary):
     """
     Creates the matrix which does the operation of a controlled unitary gate
@@ -254,7 +257,7 @@ def show(matrix):
             print(matrix)
     return None
 
-
+## CONVERTED TO OPERATOR
 def matrix_matrix(matrices):
     """
     Computes the products of matrices
@@ -271,7 +274,7 @@ def matrix_matrix(matrices):
     else:
         return matrix_matrix([matrices[0], matrix_matrix(matrices[1:])])
 
-
+## converted
 def dot(vector1, vector2):
     """
     Computes the dot product of two vectors. Assumes vectors are valid sizes/orientation to be dotted.
@@ -284,7 +287,7 @@ def dot(vector1, vector2):
     count = range(columns(vec1))
     return sum([vec1[0][i] * vec2[0][i] for i in count])
 
-
+##converted
 def columns(matrix):
     """
     Gives the number of columns in a matrix
@@ -293,7 +296,7 @@ def columns(matrix):
     """
     return len(matrix[0])
 
-
+##converted
 def rows(matrix):
     """
     Gives the number of rows in a matrix
@@ -302,7 +305,7 @@ def rows(matrix):
     """
     return len(matrix)
 
-
+## CIONVERTED TO OPERATOR
 def scalar_matrix(scalar, matrix):
     """
     Computes the product of a matrix and a scalar
@@ -314,7 +317,7 @@ def scalar_matrix(scalar, matrix):
     count_rows = range(rows(matrix))
     return [[scalar * matrix[i][j] for j in count_cols] for i in count_rows]
 
-
+##converted
 def x(vector):
     """
     Does the X (NOT) operation on a vector
@@ -323,7 +326,7 @@ def x(vector):
     """
     return matrix_matrix([Matrices.PauliX, vector])
 
-
+##converted
 def y(vector):
     """
     Does the Y operation on a vector
@@ -332,7 +335,7 @@ def y(vector):
     """
     return matrix_matrix([Matrices.PauliY, vector])
 
-
+##converted
 def z(vector):
     """
     Does the Z operation on a vector
@@ -341,7 +344,7 @@ def z(vector):
     """
     return matrix_matrix([Matrices.PauliZ, vector])
 
-
+##converted
 def hadamard(vector):
     """
     Does the Hadamard operation on a vector
@@ -350,7 +353,7 @@ def hadamard(vector):
     """
     return matrix_matrix([Matrices.Hadamard, vector])
 
-
+##converted
 def cnot(vector):
     """
     Does the CNOT operation on a vector
@@ -359,7 +362,7 @@ def cnot(vector):
     """
     return matrix_matrix([Matrices.CNOT, vector])
 
-
+##converted
 def swap(state_vector, i):
     """
     Swaps two adjacent qubits and returns a state vector with appropriate size
@@ -370,18 +373,18 @@ def swap(state_vector, i):
     length = len(state_vector)
     qubits = int(math.log(length, 2))
     ops = list()
-    for index in range(i):
+    for _ in range(i):
         ops += [eye(2)]  # Do identity ops on all qubits prior to swap
     ops += [Matrices.SWAP]
     while len(ops) < qubits - 1:
         ops += [eye(2)]  # Do identity ops on all qubits after the swap
     return matrix_matrix([kronecker(ops) if len(ops) > 1 else ops[0], state_vector])
 
-
+##converted
 def flatten(vector):
     return [[element for row in vector for element in row]]
 
-
+## CONVERTED
 def transpose(matrix):
     """
     Computes the tranpose of any matrix
@@ -394,7 +397,7 @@ def transpose(matrix):
 def collapse(vector, index):
     return vector, index
 
-
+## CONVERTED
 def add(matrices):
     """
     Computes the sum of two matrices
@@ -408,7 +411,7 @@ def add(matrices):
     else:
         return add([matrices[0], add(matrices[1:])])
 
-
+## CONVRTED
 def subtract(matrix1, matrix2):
     """
     Computes the difference of two matrices
@@ -418,7 +421,7 @@ def subtract(matrix1, matrix2):
     """
     return [[matrix1[i][j] - matrix2[i][j] for j in range(columns(matrix1))] for i in range(rows(matrix2))]
 
-
+## converted
 def norm(vector):
     """
     Returns the norm of a given vector (row or column)
@@ -464,15 +467,23 @@ def measure(state_vector):
     for each in possible_measurements:
         prob = pvm(state_vector, each)
         probabilities.append(f"Probability of measuring state |{str(each.index([1]))}> is {round(prob.real*100,1)}%.")
-    probabilities.append(
-        "\n(These may not quite sum to 100% due to floating point and rounding errors)"
-    )
     return probabilities
 
 
 def kronecker(matrices):
     """
     Recursively calculates the Kronecker product of two or more matrices.
+
+    For two matrices A, B:
+
+    A = [A11, A12],  B = [B11, B12]
+        [A21, A22]       [B21, B22]
+
+        A kron B = [A11.B, A12.B] = [A11.B11, A11.B12, A12.B11, A12.B12]
+                   [A21.B, A22.B]   [A11.B21, A11.B22, A12.B21, A12.B22]
+                                    [A21.B11, A21.B12, A22.B11, A22.B12]
+                                    [A21.B21, A21.B22, A22.B21, A22.B22]
+
     :param matrices: An ordered iterable containing matrices.
     :return: A matrix.
     """
@@ -505,6 +516,7 @@ def concat_vert(matrix1, matrix2):
     return [matrix1[row] for row in range(rows(matrix1))] + [matrix2[row] for row in range(rows(matrix2))]
 
 
+## Converted
 def trace(matrix):
     """
     Computes the trace (sum along diagonal) of a square matrix
@@ -754,7 +766,7 @@ def random_matrix(num_rows, num_cols=-1):
 
 def triangular(matrix):
     """
-    Not finished. Need to work out how to embed a new submatrix in the original.
+    TODO: Not finished. Need to work out how to embed a new submatrix in the original.
     :param matrix:
     :return:
     """
@@ -764,10 +776,12 @@ def triangular(matrix):
 
 
 def eigenvalues(matrix):
+    #TODO
     return matrix
 
 
 def eigenvectors(matrix):
+    #TODO
     return matrix
 
 
@@ -790,14 +804,14 @@ def pvm(state_vector, measurement):
     state = density_matrix(state_vector)
     return matrix_matrix([adjoint(measurement), state, measurement])[0][0]
 
-
+## converted
 def round(number, n):
     if not isinstance(number, complex):
-        return __builtins__.round(number, n)
+        return python_round(number, n)
     else:
         return round(number.real, n) + round(number.imag, n) * Matrices.i
 
-
+## converted
 def qft(n, precision=10):
     """
     Creates the normalized quantum fourier transform matrix of size n, with entries rounded to precision
@@ -809,7 +823,7 @@ def qft(n, precision=10):
     matrix = [[round(omega ** (i * j) / math.sqrt(n), precision) for j in range(n)] for i in range(n)]
     return matrix
 
-
+##converted
 def mean_inversion_matrix(size):
     """
     Creates a matrix to compute a unitary inversion about the mean.
@@ -827,7 +841,7 @@ def test1():
     count01 = 0
     count10 = 0
     count11 = 0
-    for i in range(100000):
+    for _ in range(100000):
         measurement = choose_one(Matrices.plus_plus)
         if measurement == [[1], [0], [0], [0]]:
             count00 += 1
@@ -847,10 +861,12 @@ def test1():
 
 
 def pull_substate():
+    #TODO
     pass
 
 
 def put_substate():
+    #TODO
     pass
 
 
@@ -870,3 +886,4 @@ def swap_0_2(state_vector):
         kronecker([Matrices.SWAP, eye(2)]),
         state_vector
     ])
+

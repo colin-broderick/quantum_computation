@@ -1,4 +1,4 @@
-from operators import *
+from operators import kronecker, Matrices, eye, measure, show, pvm, normalize, matrix_matrix
 
 
 def entangle_2q():
@@ -93,6 +93,6 @@ def deutsch_multi(type):
     return result
 
 
-show(deutsch_multi("constant"))
+# show(deutsch_multi("constant"))
 show(deutsch_josza("balanced"))
-show(deutsch_josza("constant"))
+# show(deutsch_josza("constant"))
