@@ -3,6 +3,12 @@ import random
 from builtins import round as python_round
 
 
+class Untested(Exception):
+    def __init__(self, message="You are trying to use an untested method or function"):
+        # Call the base class constructor with the parameters it needs
+        super().__init__(message)
+
+
 class Numbers:
     i = complex(0, 1)
 
@@ -19,12 +25,62 @@ class Matrix:
     def __str__(self):
         return "\n".join([str(row) for row in self.matrix])
 
+    def __repr__(self):
+        return self.matrix.__repr__()
+
+    @property
+    def conjugate(self):
+        new_matrix = list()
+        for row in self.matrix:
+            new_row = list()
+            for el in row:
+                new_row.append(el.conjugate() if isinstance(el, complex) else el)
+            new_matrix.append(row)
+        return Matrix(*new_matrix)
+
+    def pvm(self, vector):
+        state = self.density_matrix
+        return (vector.adjoint * state * vector).matrix[0][0]
+
+
     @property
     def flat(self):
         return Matrix(*[[element for row in self.matrix for element in row]])
 
-    def kron(self, other):
-        raise NotImplementedError
+    def measure(self):
+        density = self.density_matrix
+        probabilities = list()
+        possibles = [Matrix(*[[1 if index == each else 0 for each in range(density.rows)]]).transpose for index in range(density.rows)]
+        for each in possibles:
+            prob = self.pvm(each)
+            probabilities.append(f"Probability of measuring state |{str(each.matrix.index([1]))}> is {round(prob.real*100,1)}%.")
+        return probabilities
+
+
+    def hadamard_multiply(self, other):
+        """
+        Computes the element-wise product of two matrices
+        :param matrix1: a matrix
+        :param matrix2: a matrix
+        :return: a matrix
+        """
+        assert self.rows == other.rows
+        assert self.columns == other.columns
+
+        new_matrix = Matrix(*[[0]*self.columns]*self.rows)
+
+        for i in range(self.rows):
+            for j in range(self.columns):
+                new_matrix.matrix[i][j] = self.matrix[i][j] * other.matrix[i][j]
+
+        return new_matrix
+
+    ## This is used for the Kronecker product
+    def __mod__(self, other):
+        if isinstance(other, Matrix):
+            count = range(other.rows)
+            return Matrix(*[[num1 * num2 for num1 in elem1 for num2 in other.matrix[row]] for elem1 in self.matrix for row in count])
+        
 
     def swap(self, index):
         """
@@ -44,8 +100,23 @@ class Matrix:
         ops.append(Operators.SWAP)
         while len(ops) < qubits -1:
             ops.append(Matrices.eye(2))
-        return (self.kron(ops) if len(ops) > 1 else ops[0]) * vec
-        
+        return (self.__mod__(ops) if len(ops) > 1 else ops[0]) * vec
+
+    @property
+    def density_matrix(self):
+        return  self.adjoint.normal % self.normal
+    
+    @property
+    def states(self):
+        raise NotImplementedError
+
+    def choose(self):
+        assert self.rows == 1 or self.columns == 1
+        probs = [abs(each)**2 for each in self.normal.flat[0]]
+        options = self.density_matrix.states
+        selection = random.choices(options, weights=probs)[0]
+        return selection
+
 
     @property
     def norm(self):
@@ -78,13 +149,29 @@ class Matrix:
         if isinstance(other, float) or isinstance(other, int):
             return Matrix(*[[other * self.matrix[i][j] for j in range(self.columns)] for i in range(self.rows)])
         if isinstance(other, Matrix):
-            if not (self.rows == other.columns):
+            if not (self.columns == other.rows):
                 raise ValueError("Multiplied matrices with incompatible dimension")
             return Matrix(*[[sum(x * other.matrix[i][col] for i,x in enumerate(row)) for col in range(len(other.matrix[0]))] for row in self.matrix])
 
+    def __rtruediv__(self, other):
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, complex):
+            return self / (1/other)
+
+    def __truediv__(self, other):
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, complex):
+            return self * (1 / other)
+
     def __rmul__(self, other):
+
         if isinstance(other, float) or isinstance(other, int):
             return Matrix(*[[other * self.matrix[i][j] for j in range(self.columns)] for i in range(self.rows)])
+
+    def submatrix(self, rows, columns):
+        """
+        Get a submatrix specified by the rows and columns given as lists.
+        """
+        ## TODO: Can request two of the same row, which would delete some of the expected column entries. Acceptable?
+        return self.rows_(rows).columns_(columns)
 
     def __getitem__(self, key):
         return self.matrix[key]
@@ -95,6 +182,76 @@ class Matrix:
         v1 = self.flat
         v2 = self.flat.transpose
         return (v1 * v2)[0][0]
+
+    def row(self, index):
+        """
+        Get specified row
+        """
+        return Matrix(self.matrix[index])
+
+    @property
+    def inverse(self):
+        raise NotImplementedError
+
+    @property
+    def minors(self):
+        raise NotImplementedError
+
+    @property
+    def cofactor_signs(self):
+        raise NotImplementedError
+
+    @property
+    def determinant(self):
+        raise NotImplementedError
+
+    @property
+    def is_unitary(self):
+        raise NotImplementedError
+
+    @property
+    def is_normal(self):
+        raise NotImplementedError
+
+    @property
+    def adjoint(self):
+        return self.transpose.conjugate
+
+    def column(self, index):
+        """
+        Get specified column
+        """
+        count = range(self.rows)
+        return Matrix(*[[self.matrix[i][index]] for i in count])
+        
+    @property
+    def normal(self):
+        """
+        The normalized version of a row or column vector
+        """
+        assert self.rows == 1 or self.columns == 1
+        n = self.norm
+        return 1/n*self
+
+    def rows_(self, rows):
+        """
+        Get rows specified by list
+        """
+        return Matrix(*[self.matrix[i] for i in rows])
+
+    def columns_(self, columns):
+        """
+        Get columns specified by list
+        """
+        elements = list()
+        for row in self.matrix:
+            new_row = list()
+            for col in columns:
+                new_row.append(row[col])
+            elements.append(new_row)
+        return Matrix(*elements)
+
+
 
     @property
     def transpose(self):
@@ -108,6 +265,12 @@ class Matrix:
 
 
 class Operators:    
+    DeutschConstant = Matrix(
+        [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]
+    )
+    DeutschBalanced = Matrix(
+        [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]
+    )
     PauliX = Matrix(
         [0., 1.],
         [1., 0.]
@@ -169,58 +332,55 @@ class Operators:
 
 
 class Vectors:
-    zero = [
-        [1],
-        [0]
-    ]
-    zero_zero = [
+    zero = Matrix([1], [0])    
+    zero_zero = Matrix(
         [1],
         [0],
         [0],
         [0]
-    ]
-    one = [
+    )
+    one = Matrix(
         [0],
         [1]
-    ]
-    zero_one = [
+    )
+    zero_one = Matrix(
         [0],
         [1],
         [0],
         [0]
-    ]
-    two = [
+    )
+    two = Matrix(
         [0],
         [0],
         [1],
         [0]
-    ]
-    three = [
+    )
+    three = Matrix(
         [0],
         [0],
         [0],
         [1]
-    ]
-    plus = [
+    )
+    plus = Matrix(
         [1 / math.sqrt(2)],
         [1 / math.sqrt(2)]
-    ]
-    plus_plus = [
+    )
+    plus_plus = Matrix(
         [1 / 2],
         [1 / 2],
         [1 / 2],
         [1 / 2]
-    ]
-    minus = [
+    )
+    minus = Matrix(
         [1 / math.sqrt(2)],
         [-1 / math.sqrt(2)]
-    ]
-    minus_minus = [
+    )
+    minus_minus = Matrix(
         [1 / 2],
         [-1 / 2],
         [-1 / 2],
         [1 / 2]
-    ]
+    )
 
 
 States = Vectors
@@ -289,65 +449,6 @@ class Matrices:
         two_over_n_matrix = (2/size) * base_matrix
         return two_over_n_matrix - identity
 
-    @property
-    def inverse(self):
-        raise NotImplementedError
-
-    @property
-    def minors(self):
-        raise NotImplementedError
-
-    @property
-    def cofactor_signs(self):
-        raise NotImplementedError
-
-    @property
-    def determinant(self):
-        raise NotImplementedError
-
-    @property
-    def is_unitary(self):
-        raise NotImplementedError
-
-    @property
-    def is_normal(self):
-        raise NotImplementedError
-
-    @property
-    def adjoint(self):
-        raise NotImplementedError
-
-    def row(self, index):
-        """
-        Get specified row
-        """
-        raise NotImplementedError
-
-    def column(self, index):
-        """
-        Get specified column
-        """
-        raise NotImplementedError
-
-    def rows_(self, rows):
-        """
-        Get rows specified by list
-        """
-        raise NotImplementedError
-
-    def columns_(self, columns):
-        """
-        Get columns specified by list
-        """
-        raise NotImplementedError
-
-    def submatrix(self, rows, columns):
-        """
-        Get a submatrix specified by the rows and columns given as lists.
-        """
-        raise NotImplementedError("fn not tested")
-        return self.rows_(rows).columns_(columns)
-
     def condense(self):
         """
         Condenses a matrix, i.e. uses row operations to set elements [0][i] to zero for all i except i = 0
@@ -366,14 +467,7 @@ class Matrices:
 
 
 
-    @property
-    def conjugate(self):
-        raise NotImplementedError
-
-    @property
-    def normal(self):
-        raise NotImplementedError
-
+    
     def __pow__(self, power):
         raise NotImplementedError
 
@@ -440,18 +534,3 @@ def round(number, n):
         return round(number.real, n) + round(number.imag, n) * Numbers.i
 
 
-
-zeroes = Operators.PauliY
-cont = Matrices.controlled(zeroes)
-print(zeroes)
-print(cont-cont)
-print(3*cont*3)
-
-print(zeroes.transpose)
-
-vec = Matrix([1], [1], [1], [1])
-print(vec.norm)
-print(vec.flat)
-print(vec.dot(vec))
-print()
-print(Matrices.qft(5))

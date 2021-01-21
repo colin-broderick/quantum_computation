@@ -149,7 +149,6 @@ class Matrices:
         "|-->": minus_minus
     }
 
-
 ## CONVERTED
 def phase(angle):
     """
@@ -393,8 +392,8 @@ def transpose(matrix):
     """
     return [[matrix[j][i] for j in range(rows(matrix))] for i in range(columns(matrix))]
 
-
 def collapse(vector, index):
+    ## TODO
     return vector, index
 
 ## CONVERTED
@@ -430,7 +429,7 @@ def norm(vector):
     """
     return math.sqrt(sum([abs(element) ** 2 for element in flatten(vector)[0]]))
 
-
+##converted
 def normalize(vector):
     """
     Returns the normalized vector
@@ -559,7 +558,7 @@ def minors(matrix):
             ))
     return new_matrix
 
-
+## converted
 def hadamard_product(matrix1, matrix2):
     """
     Computes the element-wise product of two matrices
@@ -655,7 +654,7 @@ def is_normal(matrix):
     """
     return matrix_matrix([matrix, adjoint(matrix)]) == matrix_matrix([adjoint(matrix), matrix])
 
-
+##converted
 def conjugate_matrix(matrix):
     """
     Computes the complex conjugate of a matrix
@@ -664,7 +663,7 @@ def conjugate_matrix(matrix):
     """
     return [[element.conjugate() if isinstance(element, complex) else element for element in row] for row in matrix]
 
-
+## converted
 def adjoint(matrix):
     """
     Returns the complex conjugate tranpose (also called adjoint) of a matrix
@@ -673,7 +672,7 @@ def adjoint(matrix):
     """
     return conjugate_matrix(transpose(matrix))
 
-
+## converted
 def get_row(matrix, row_number):
     """
     Returns the requested row of the given matrix (zero-indexed)
@@ -683,7 +682,7 @@ def get_row(matrix, row_number):
     """
     return [matrix[row_number]]
 
-
+## converted
 def get_column(matrix, column_number):
     """
     Returns the requested column of the given matrix (zero-indexed)
@@ -694,7 +693,7 @@ def get_column(matrix, column_number):
     count = range(rows(matrix))
     return [[matrix[i][column_number]] for i in count]
 
-
+##converted
 def get_rows(matrix, row_numbers):
     """
     Same as get_row, but returns multiple rows
@@ -704,7 +703,7 @@ def get_rows(matrix, row_numbers):
     """
     return [matrix[i] for i in row_numbers]
 
-
+##convertd
 def get_columns(matrix, column_numbers):
     """
     Same as get_column but returns multiple columns
@@ -715,7 +714,7 @@ def get_columns(matrix, column_numbers):
     count = range(rows(matrix))
     return [[matrix[i][column_number] for column_number in column_numbers] for i in count]
 
-
+## converted
 def get_submatrix(matrix, row_nums, col_nums):
     """
     Returns a submatrix of given matrix
