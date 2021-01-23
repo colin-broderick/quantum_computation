@@ -1,5 +1,4 @@
 from operators import Matrix, Matrices, Vectors, Operators
-from operators_old import show
 
 
 def new_entangle_2q():
@@ -17,6 +16,7 @@ def new_entangle_2q():
     register2 = Operators.CNOT * register1
 
     return register2
+
 
 
 
@@ -45,13 +45,13 @@ def new_deutsch(kind):
 def new_example1():
     state = new_entangle_2q()
     print("Chance of measuring |00>: ", end="")
-    show(state.pvm(Matrix([1], [0], [0], [0])))
+    print(state.pvm(Matrix([1], [0], [0], [0])))
     print("Chance of measuring |01>: ", end="")
-    show(state.pvm(Matrix([0], [1], [0], [0])))
+    print(state.pvm(Matrix([0], [1], [0], [0])))
     print("Chance of measuring |10>: ", end="")
-    show(state.pvm(Matrix([0], [0], [1], [0])))
+    print(state.pvm(Matrix([0], [0], [1], [0])))
     print("Chance of measuring |11>: ", end="")
-    show(state.pvm(Matrix([0], [0], [0], [1])))
+    print(state.pvm(Matrix([0], [0], [0], [1])))
 
 
 def new_deutsch_multi(kind):
@@ -94,6 +94,7 @@ def swap_example():
     to
       |0> |0> |-> |+> |0>
     """
+    #TODO Rewrite this example now that it works
     # start_state = Vectors.zero % Vectors.zero % Vectors.plus % Vectors.minus % Vectors.zero
     # final_state = Vectors.zero % Vectors.zero % Vectors.minus % Vectors.plus % Vectors.zero
     start_state = Vectors.zero % Vectors.one % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero
@@ -105,6 +106,26 @@ def swap_example():
     else:
         print("NEQUAL")
 
+
+
+def control():
+    register0 = Vectors.zero % Vectors.zero % Vectors.zero
+    register1 = Vectors.one % Vectors.zero % Vectors.zero
+    op = (Vectors.zero % Vectors.zero.transpose) % Matrices.eye(4) + (Vectors.one % Vectors.one.transpose) % Matrices.eye(2) % Operators.PauliX
+    print((op*register0-register0).transpose)
+    print()
+    print((op*register1-register1).transpose)
+
+
+def bellzz():
+    register1 = Vectors.zero % Vectors.zero
+    operator1 = Operators.Hadamard % Matrices.eye(2)
+    register2 = operator1 * register1
+
+    operator2 = Matrices.controlled(0, 1, Operators.PauliX)
+
+    register3 = operator2 * register2
+    print(register3.measure())
 
 
 print(" Deutsch-Josza algorithm ".center(45, "-"))
@@ -122,3 +143,7 @@ print()
 print(" Swapping adjacent qubits ".center(45, "-"))
 swap_example()
 print("-"*45)
+
+
+control()
+bellzz()

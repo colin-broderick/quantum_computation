@@ -29,20 +29,60 @@ class Matrix:
     def __repr__(self):
         return self.matrix.__repr__()
 
+    def __neg__(self):
+        return Matrices.zeroes(self.rows, self.columns) - self
+
     @property
     def conjugate(self):
-        new_matrix = list()
-        for row in self.matrix:
-            new_row = list()
-            for el in row:
-                new_row.append(el.conjugate() if isinstance(el, complex) else el)
-            new_matrix.append(row)
+        new_matrix = Matrices.zeroes(self.rows, self.columns)
+        for i, row in enumerate(self.matrix):
+            for j, column in enumerate(row):
+                new_matrix[i][j] = self.matrix[i][j].conjugate() if isinstance(self.matrix[i][j], complex) else self.matrix[i][j]
         return Matrix(*new_matrix)
 
     def pvm(self, vector):
         state = self.density_matrix
         return (vector.adjoint * state * vector).matrix[0][0]
 
+
+    def multi_swap(self, a, b):
+        """
+        Swaps the positions of the qubits indexed by numbers a and b, with a strictly less than b.
+
+        Example: Swapping qubits 1 and 5.        
+
+        0 --------------------------------------------- 0
+
+        1 ---------------------\ /--------------------- 5
+                                x
+        2 ---------------\ /---/ \---\ /--------------- 2
+                          x           x
+        3 ---------\ /---/ \---------/ \---\ /--------- 3
+                    x                       x
+        4 ---\ /---/ \---------------------/ \---\ /--- 4
+              x                                   x
+        5 ---/ \---------------------------------/ \--- 1
+        
+        """
+
+        assert a < b
+        i = b
+        j = a +1
+        new = self
+
+        ## This loop moves qubit b to the position qubit a by successive swaps.
+        ## As a result, every qubit it passes, including qubit a, is moved down one place.
+        while i > a:
+            new = new.swap(i-1)  # Read as swap(i-1, i)
+            i -= 1
+        
+        ## This loop moves qubit a, which has already been moved down one spot, the rest of the way.
+        ## Every qubit it passes is moved up one spot, restoring it to its original place.
+        ## The final effect is the swapping of qubits a and b.
+        while j < b:
+            new = new.swap(j)    # Read as swap(j, j+1)
+            j += 1
+        return new
 
     @property
     def flat(self):
@@ -120,6 +160,22 @@ class Matrix:
 
     ## This is used for the Kronecker product until I can find a better option. Not enough ops in python!
     def __mod__(self, other):
+        """
+        Calculates the Kronecker product of two matrices.
+
+        For two matrices A, B:
+
+        A = [A11, A12],  B = [B11, B12]
+            [A21, A22]       [B21, B22]
+
+            A kron B = [A11.B, A12.B] = [A11.B11, A11.B12, A12.B11, A12.B12]
+                    [A21.B, A22.B]   [A11.B21, A11.B22, A12.B21, A12.B22]
+                                        [A21.B11, A21.B12, A22.B11, A22.B12]
+                                        [A21.B21, A21.B22, A22.B21, A22.B22]
+
+        :param other: A matrix of any size.
+        :return: A matrix.
+        """
         if isinstance(other, Matrix):
             count = range(other.rows)
             return Matrix(*[[num1 * num2 for num1 in elem1 for num2 in other.matrix[row]] for elem1 in self.matrix for row in count])
@@ -245,19 +301,31 @@ class Matrix:
 
     @property
     def cofactor_signs(self):
-        raise NotImplementedError
+        return Matrix(*[[(-1) ** (i + j) for i in range(self.rows)] for j in range(self.rows)])
 
     @property
     def determinant(self):
-        raise NotImplementedError
+        """
+        Recursively calculates the determinant of a matrix by cofactor expansion.
+
+        https://www.youtube.com/watch?v=6-nnxrnnZT8
+        """
+        if self.rows == self.columns == 1:
+            return self.matrix[0][0]
+        else:
+            det = 0
+            for index, value in enumerate(self.matrix[0]):
+                cofactor_matrix = self.submatrix(range(1,self.rows), [col for col in range(self.columns) if col != index])
+                det = det + value*(-1)**(index+2)*cofactor_matrix.determinant
+            return det
 
     @property
     def is_unitary(self):
-        raise NotImplementedError
+        return self * self.adjoint == Matrices.eye(self.rows) and self.is_normal
 
     @property
     def is_normal(self):
-        raise NotImplementedError
+        return self*self.adjoint == self.adjoint*self
 
     @property
     def adjoint(self):
@@ -296,8 +364,6 @@ class Matrix:
                 new_row.append(row[col])
             elements.append(new_row)
         return Matrix(*elements)
-
-
 
     @property
     def transpose(self):
@@ -544,22 +610,46 @@ class Matrices:
         return Matrix(*[[1. if i == j else 0. for i in range(shape)] for j in range(shape)])
 
     @staticmethod
-    def controlled(matrix):
+    def controlled(control_bit, target_bit, operation):
         """
-        Creates the matrix which does the operation of a controlled unitary gate
-        :param unitary: a 2x2 unitary matrix
+        Creates the matrix which does the operation of a controlled gate,
+        controlled by control_bit, targetting target_bit.
+
+        https://quantumcomputing.stackexchange.com/questions/4252/how-to-derive-the-cnot-matrix-for-a-3-qubit-system-where-the-control-target-qu
+
+        CX[1,3] = |0><0| kr I2 kr I2 + |1><1| kr I2 kr X
+
+        :param control_bit: The control bit deciding whether to perform the operation.
+        :param target_bit: Which bit should be operated on if the control is 1.
+        :param operation: The operation to be conditionally performed on the target bit.
         :return: a 4x4 controlled unitary matrix
         """
-        a = matrix[0][0]
-        b = matrix[0][1]
-        c = matrix[1][0]
-        d = matrix[1][1]
-        return Matrix(
-            [1., 0., 0., 0.],
-            [0., 1., 0., 0.],
-            [0., 0.,  a,  b],
-            [0., 0.,  c,  d]
-        )
+        part1_ops = list()
+        part2_ops = list()
+
+        for i in range(max(control_bit, target_bit) + 1):
+            if i == control_bit:
+                part1_ops.append(Vectors.zero % Vectors.zero.transpose)
+                part2_ops.append(Vectors.one % Vectors.one.transpose)
+            elif i == target_bit:
+                part1_ops.append(Matrices.eye(2))
+                part2_ops.append(operation)
+            else:
+                part1_ops.append(Matrices.eye(2))
+                part2_ops.append(Matrices.eye(2))
+        
+        part1_op = part1_ops[0]
+        part2_op = part2_ops[0]
+        for i in range(1, len(part1_ops)):
+            part1_op = part1_op % part1_ops[i]
+            part2_op = part2_op % part2_ops[i]
+        
+        op = part1_op + part2_op
+        return op
+
+
+        ## (Vectors.zero % Vectors.zero.transpose) % Matrices.eye(4) + (Vectors.one % Vectors.one.transpose) % Matrices.eye(2) % Operators.PauliX
+
 
 Vector = Matrix
 
