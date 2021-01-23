@@ -89,12 +89,7 @@ class MatrixMethods(unittest.TestCase):
 
     def test_is_unitary(self):
         self.assertTrue(Operators.PauliX.is_unitary)
-        print()
-        print(Operators.PauliY)
-        print(Operators.PauliY.adjoint)
-        print(Operators.PauliY.conjugate)
-        print(Operators.PauliY.transpose)
-        # self.assertTrue(Operators.PauliY.is_unitary)
+        self.assertTrue(Operators.PauliY.is_unitary)
         self.assertTrue(Operators.PauliZ.is_unitary)
         self.assertTrue(Operators.PauliI.is_unitary)
         self.assertTrue(Operators.CNOT.is_unitary)
@@ -154,7 +149,35 @@ class MatrixMethods(unittest.TestCase):
         self.assertEqual(Matrices.controlled(0, 2, op)*m101, m100)
         self.assertEqual(Matrices.controlled(0, 2, op)*m110, m111)
         self.assertEqual(Matrices.controlled(0, 2, op)*m111, m110)
-        
+
+
+    def test_minors(self):
+        m1 = Matrix(
+            [1, 2, 1],
+            [6, -1, 0],
+            [-1, -2, -1]
+        )
+        m2 = Matrix(
+            [1, -6, -13],
+            [0, 0, 0],
+            [1, -6, -13]
+        )
+        m3 = m1.minors
+        self.assertEqual(m2, m3)
+
+        m1 = Matrix(
+            [7, 9, -3],
+            [3, -6, 5],
+            [4, 0, 1]
+        )
+        m2 = Matrix(
+            [-6, -17, 24],
+            [9, 19, -36],
+            [27, 44, -69]
+        )
+        m3 = m1.minors
+        self.assertEqual(m2, m3)
+
         
     def test_trace(self):
         # TODO: Incomplete

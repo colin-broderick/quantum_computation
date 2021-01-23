@@ -297,7 +297,21 @@ class Matrix:
 
     @property
     def minors(self):
-        raise NotImplementedError
+        """
+        Computes the matrix of minors.
+
+        For each element in the matrix, find the determinant of the matrix obtained
+        by deleting the row and column containing that element. Replace the element
+        with that determinant.
+        """
+        new_matrix = Matrices.zeroes(self.rows, self.columns)
+        for i in range(self.rows):
+            for j in range(self.rows):
+                new_matrix.matrix[i][j] = self.submatrix(
+                    [row for row in range(self.rows) if row != i],
+                    [col for col in range(self.columns) if col != j]
+                ).determinant
+        return new_matrix
 
     @property
     def cofactor_signs(self):
