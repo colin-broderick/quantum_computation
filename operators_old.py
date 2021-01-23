@@ -40,23 +40,6 @@ def inverse(matrix):
     return final_matrix
 
 
-def minors(matrix):
-    """
-    Computes the matrix of minors of a given matrix
-    :param matrix: a matrix
-    :return: a matrix of minors
-    """
-    new_matrix = zeroes(rows(matrix), columns(matrix))
-    for index in range(rows(matrix)):
-        for jndex in range(rows(matrix)):
-            new_matrix[index][jndex] = determinant(get_submatrix(
-                matrix,
-                [row for row in range(rows(matrix)) if row != index],
-                [col for col in range(columns(matrix)) if col != jndex]
-            ))
-    return new_matrix
-
-
 def hadamard_quotient(matrix1, matrix2):
     """
     Computes the element-wise quotient of two matrices. Can something useful be done in the ZeroDivisionError case?

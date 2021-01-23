@@ -293,7 +293,22 @@ class Matrix:
 
     @property
     def inverse(self):
-        raise NotImplementedError
+        """
+        If possible, determines the inverse of the matrix.
+
+        Note that this implementation makes no attempt to detect
+        pathological cases which would produce floating point errors
+        or zero division errors. Except the obvious case of zero
+        determinant.
+        """
+        sign_matrix = self.cofactor_signs
+        minors_matrix = self.minors
+        composed_matrix = sign_matrix.hadamard_multiply( minors_matrix )
+        tranposed = composed_matrix.transpose
+        deter = self.determinant
+        if deter == 0:
+            raise ValueError("Zero determinant implies non-invertible matrix")
+        return (1/deter)*tranposed
 
     @property
     def minors(self):

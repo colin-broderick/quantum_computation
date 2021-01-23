@@ -178,7 +178,23 @@ class MatrixMethods(unittest.TestCase):
         m3 = m1.minors
         self.assertEqual(m2, m3)
 
-        
+    def test_inverse(self):
+        m1 = Matrices.eye(2)
+        m2 = Matrices.eye(2).inverse
+        self.assertEqual(m1, m2)
+        m1 = Matrix(
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 2, 9]
+        )
+        m2 = Matrix(
+            [-11/12, 1/3, 1/12],
+            [-1/6, 1/3, -1/6],
+            [3/4, -1/3, 1/12]
+        )
+        m3 = m1.inverse
+        self.assertEqual(m2, m3)
+
     def test_trace(self):
         # TODO: Incomplete
         trace = Operators.SWAP.trace
