@@ -9,12 +9,7 @@ class MatrixMethods(unittest.TestCase):
         m1 = Matrices.random(5)
         m2 = m1.condense()
         vector = Matrices.random(5, 1)
-        print(m1*vector - m2*vector)
         self.assertEqual(m1*vector, m2*vector)
-
-
-
-
 
     def test_conjugate(self):
         m1 = Matrices.eye(2)
@@ -162,7 +157,6 @@ class MatrixMethods(unittest.TestCase):
         self.assertEqual(Matrices.controlled(0, 2, op)*m110, m111)
         self.assertEqual(Matrices.controlled(0, 2, op)*m111, m110)
 
-
     def test_minors(self):
         m1 = Matrix(
             [1, 2, 1],
@@ -206,6 +200,28 @@ class MatrixMethods(unittest.TestCase):
         )
         m3 = m1.inverse
         self.assertEqual(m2, m3)
+
+    def test_double_controlled(self):
+        ## The operator we will conditionally execute.
+        U = Operators.PauliX
+
+        ## Vectors we will test our control operator on.
+        a = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero
+        b = Vectors.zero % Vectors.one % Vectors.zero % Vectors.zero
+        c = Vectors.one % Vectors.zero % Vectors.zero % Vectors.zero
+        d = Vectors.one % Vectors.one % Vectors.zero % Vectors.zero
+
+        ## This is what we expect to get by operating on d. All other vectors should remain unchanged.
+        e = Vectors.one % Vectors.one % Vectors.zero % Vectors.one
+
+        ## We create an operator that uses bits 0 and 1 to control bit 3, acting U as appropriate.
+        cc124 = Matrices.double_controlled(*[0, 1], 3, U)
+
+        self.assertEqual((cc124 * a), a)
+        self.assertEqual((cc124 * b), b)
+        self.assertEqual((cc124 * c), c)
+        self.assertEqual((cc124 * d), e)
+        self.assertNotEqual((cc124 * d), d)
 
     def test_trace(self):
         # TODO: Incomplete
