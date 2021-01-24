@@ -1,5 +1,5 @@
 from math import sqrt, isclose, sin, cos, pi, log
-from builtins import round as python_round
+from qmath import exp, round
 from random import choices, random
 
 
@@ -18,10 +18,25 @@ class Matrix:
     def __init__(self, *args):
         for arg in args:
             if not (isinstance(arg, list) or isinstance(arg, tuple)):
-                raise TypeError("Arguments for matrix constructor must be lists")
+                raise TypeError("Arguments for matrix constructor must be lists or tuples")
         self.matrix = [list(arg) for arg in args]
-        self.columns = len(self.matrix[0])
-        self.rows = len(self.matrix)
+        self.columns = len(self[0])
+        self.rows = len(self)
+
+        self._inverse = None
+        self._conjugate = None
+        self._flat = None
+        self._density_matrix = None
+        self._norm = None
+        self._trace = None
+        self._minors = None
+        self._cofactor_signs = None
+        self._determinant = None
+        self._is_unitary = None
+        self._is_normal = None
+        self._adjoint = None
+        self._normal = None
+        self._tranpose = None
 
     def __str__(self):
         return "\n".join([str(row) for row in self.matrix])
@@ -32,22 +47,123 @@ class Matrix:
     def __neg__(self):
         return Matrices.zeroes(self.rows, self.columns) - self
 
+    def __eq__(self, other):
+        assert self.rows == other.rows
+        assert self.columns == other.columns
+        for i in range(self.rows):
+            for j in range(self.columns):
+                if self[i][j] != other[i][j]:
+                    return False
+        return True
+
+    def __len__(self):
+        return len(self.matrix)
+
+    def __mod__(self, other):
+        """
+        Calculates the Kronecker product of two matrices.
+
+        For two matrices A, B:
+
+        A = [A11, A12],  B = [B11, B12]
+            [A21, A22]       [B21, B22]
+
+            A kron B = [A11.B, A12.B] = [A11.B11, A11.B12, A12.B11, A12.B12]
+                    [A21.B, A22.B]   [A11.B21, A11.B22, A12.B21, A12.B22]
+                                        [A21.B11, A21.B12, A22.B11, A22.B12]
+                                        [A21.B21, A21.B22, A22.B21, A22.B22]
+
+        :param other: A matrix of any size.
+        :return: A matrix.
+        """
+        if isinstance(other, Matrix):
+            count = range(other.rows)
+            return Matrix(*[[num1 * num2 for num1 in elem1 for num2 in other[row]] for elem1 in self.matrix for row in count])
+        
+    def __add__(self, other):
+        """
+        If a matrix is added to another matrix, add them element-wise and return the resulting matrix.
+        There are no other valid matrix additions.
+        """
+        if isinstance(other, Matrix):
+            m1 = self.matrix
+            m2 = other.matrix
+            return Matrix(*[[m1[i][j] + m2[i][j] for j in range(self.columns)] for i in range(self.rows)])
+
+    def __sub__(self, other):
+        """
+        If a matrix is subtracted from another matrix, perform an addition instead with the second
+        with the second matrix negated.
+        There are no other valid matrix subtractions.
+        """
+        if isinstance(other, Matrix):
+            return self + (-1 * other)
+
+    def __mul__(self, other):
+        """
+        If two matrices are multiplied, perform the standard matrix multiplication.
+        If a matrix is multiliplied by a scalar on the right, multiply each element
+        by that scalar.
+        """
+        if isinstance(other, float) or isinstance(other, int) or isinstance(other, complex):
+            return Matrix(*[[other * self[i][j] for j in range(self.columns)] for i in range(self.rows)])
+        if isinstance(other, Matrix):
+            if not (self.columns == other.rows):
+                raise ValueError("Multiplied matrices with incompatible dimension")
+            return Matrix(*[[sum(x * other[i][col] for i,x in enumerate(row)) for col in range(len(other[0]))] for row in self.matrix])
+
+    def __rtruediv__(self, other):
+        """
+        Interpreted a scalar divided by a matrix as division of that matrix by the
+        reciprocal of the scalar.
+        """
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, complex):
+            return self / (1/other)
+
+    def __truediv__(self, other):
+        """
+        Interpreted division by a scalar as multiplication by the reciprocal of that scalar.
+        """
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, complex):
+            return self * (1 / other)
+
+    def __rmul__(self, other):
+        """
+        If a matrix is multliped by a scalar on the left, multiply each element by that scalar.
+        """
+        if isinstance(other, float) or isinstance(other, int) or isinstance(other, complex):
+            return Matrix(*[[other * self[i][j] for j in range(self.columns)] for i in range(self.rows)])
+
+    def __getitem__(self, key):
+        """
+        Indexing retrieves rows of the matrix, e.g. matrix[2] returns the second third row of the matrix as rows as zero-indexed.
+        """
+        return self.matrix[key]
+
     @property
     def conjugate(self):
-        new_matrix = Matrices.zeroes(self.rows, self.columns)
-        for i, row in enumerate(self.matrix):
-            for j, column in enumerate(row):
-                new_matrix[i][j] = self.matrix[i][j].conjugate() if isinstance(self.matrix[i][j], complex) else self.matrix[i][j]
-        return Matrix(*new_matrix)
+        """
+        The conjugate of a matrix is found by negating the complex part of all elements.
+        """
+        if self._conjugate is None:
+            new_matrix = Matrices.zeroes(self.rows, self.columns)
+            for i, row in enumerate(self.matrix):
+                for j, column in enumerate(row):
+                    new_matrix[i][j] = self[i][j].conjugate() if isinstance(self[i][j], complex) else self[i][j]
+            self._conjugate = Matrix(*new_matrix)
+        return self._conjugate
 
     def pvm(self, vector):
         state = self.density_matrix
-        return (vector.adjoint * state * vector).matrix[0][0]
-
+        return (vector.adjoint * state * vector)[0][0]
 
     def multi_swap(self, a, b):
         """
         Swaps the positions of the qubits indexed by numbers a and b, with a strictly less than b.
+
+        If the qubits are not adjacent, the qubit b is swapped with the qubit above until it replaces
+        qubit a. Qubit a is then swapped with the qubit below into it reaches the original position
+        of qubit b.
 
         Example: Swapping qubits 1 and 5.        
 
@@ -86,16 +202,12 @@ class Matrix:
 
     @property
     def flat(self):
-        return Matrix(*[[element for row in self.matrix for element in row]])
-
-    def __eq__(self, other):
-        assert self.rows == other.rows
-        assert self.columns == other.columns
-        for i in range(self.rows):
-            for j in range(self.columns):
-                if self.matrix[i][j] != other.matrix[i][j]:
-                    return False
-        return True
+        """
+        Flattens the matrix into a single row of length rows*columns.
+        """
+        if self._flat is None:
+            self._flat = Matrix(*[[element for row in self.matrix for element in row]])
+        return self._flat
 
     @property
     def eigenvalues(self):
@@ -116,7 +228,7 @@ class Matrix:
         assert row1 < self.rows
         assert row2 < self.rows
         count = range(self.rows)
-        return Matrix(*[self.matrix[i] if i not in [row1, row2] else self.matrix[row1] if i == row2 else self.matrix[row2] for i in count])
+        return Matrix(*[self[i] if i not in [row1, row2] else self[row1] if i == row2 else self[row2] for i in count])
 
     def condense(self):
         """
@@ -129,16 +241,19 @@ class Matrix:
             [matrix[i][j] - matrix[i][0] / matrix[0][0] * matrix[0][j] for j in range(self.columns)] for i in
             range(1, self.rows)]
         return Matrix(*new_matrix)
+    
+    @property
+    def states(self):
+        return [Matrix(*[[1 if index == each else 0 for each in range(self.rows)]]).transpose for index in range(self.rows)]
 
     def measure(self):
         density = self.density_matrix
         probabilities = list()
-        possibles = [Matrix(*[[1 if index == each else 0 for each in range(density.rows)]]).transpose for index in range(density.rows)]
+        possibles = density.states
         for each in possibles:
             prob = self.pvm(each)
             probabilities.append(f"Probability of measuring state |{str(each.matrix.index([1]))}> is {round(prob.real*100,1)}%.")
         return probabilities
-
 
     def hadamard_multiply(self, other):
         """
@@ -154,32 +269,9 @@ class Matrix:
 
         for i in range(self.rows):
             for j in range(self.columns):
-                new_matrix.matrix[i][j] = self.matrix[i][j] * other.matrix[i][j]
+                new_matrix[i][j] = self[i][j] * other[i][j]
 
         return new_matrix
-
-    ## This is used for the Kronecker product until I can find a better option. Not enough ops in python!
-    def __mod__(self, other):
-        """
-        Calculates the Kronecker product of two matrices.
-
-        For two matrices A, B:
-
-        A = [A11, A12],  B = [B11, B12]
-            [A21, A22]       [B21, B22]
-
-            A kron B = [A11.B, A12.B] = [A11.B11, A11.B12, A12.B11, A12.B12]
-                    [A21.B, A22.B]   [A11.B21, A11.B22, A12.B21, A12.B22]
-                                        [A21.B11, A21.B12, A22.B11, A22.B12]
-                                        [A21.B21, A21.B22, A22.B21, A22.B22]
-
-        :param other: A matrix of any size.
-        :return: A matrix.
-        """
-        if isinstance(other, Matrix):
-            count = range(other.rows)
-            return Matrix(*[[num1 * num2 for num1 in elem1 for num2 in other.matrix[row]] for elem1 in self.matrix for row in count])
-        
 
     def swap(self, index):
         """
@@ -206,19 +298,16 @@ class Matrix:
 
     @property
     def density_matrix(self):
-        return  self.adjoint.normal % self.normal
-    
-    @property
-    def states(self):
-        raise NotImplementedError
+        if self._density_matrix is None:
+            self._density_matrix = self.adjoint.normal % self.normal
+        return self._density_matrix
 
-    def choose(self):
+    def collapse(self):
         assert self.rows == 1 or self.columns == 1
         probs = [abs(each)**2 for each in self.normal.flat[0]]
         options = self.density_matrix.states
         selection = choices(options, weights=probs)[0]
         return selection
-
 
     @property
     def norm(self):
@@ -227,46 +316,19 @@ class Matrix:
         :param vector: any vector
         :return: a number
         """
-        assert (self.rows == 1 or self.columns == 1)
-        return sqrt(sum([abs(el**2) for el in self.flat.matrix[0]]))
+        if self._norm is None:    
+            assert (self.rows == 1 or self.columns == 1)
+            self._norm = sqrt(sum([abs(el**2) for el in self.flat[0]]))
+        return self._norm
         
     @property
     def trace(self):
-        if self.rows < self.columns:
-            return sum([self.matrix[i][i] for i in range(self.rows)])
-        else:
-            return sum([self.matrix[i][i] for i in range(self.columns)])
-
-    def __add__(self, other):
-        if isinstance(other, Matrix):
-            m1 = self.matrix
-            m2 = other.matrix
-            return Matrix(*[[m1[i][j] + m2[i][j] for j in range(self.columns)] for i in range(self.rows)])
-
-    def __sub__(self, other):
-        if isinstance(other, Matrix):
-            return self + (-1 * other)
-
-    def __mul__(self, other):
-        if isinstance(other, float) or isinstance(other, int) or isinstance(other, complex):
-            return Matrix(*[[other * self.matrix[i][j] for j in range(self.columns)] for i in range(self.rows)])
-        if isinstance(other, Matrix):
-            if not (self.columns == other.rows):
-                raise ValueError("Multiplied matrices with incompatible dimension")
-            return Matrix(*[[sum(x * other.matrix[i][col] for i,x in enumerate(row)) for col in range(len(other.matrix[0]))] for row in self.matrix])
-
-    def __rtruediv__(self, other):
-        if isinstance(other, int) or isinstance(other, float) or isinstance(other, complex):
-            return self / (1/other)
-
-    def __truediv__(self, other):
-        if isinstance(other, int) or isinstance(other, float) or isinstance(other, complex):
-            return self * (1 / other)
-
-    def __rmul__(self, other):
-
-        if isinstance(other, float) or isinstance(other, int):
-            return Matrix(*[[other * self.matrix[i][j] for j in range(self.columns)] for i in range(self.rows)])
+        if self._trace is None:
+            if self.rows < self.columns:
+                self._trace = sum([self[i][i] for i in range(self.rows)])
+            else:
+                self._trace = sum([self[i][i] for i in range(self.columns)])
+        return self._trace
 
     def submatrix(self, rows, columns):
         """
@@ -274,9 +336,6 @@ class Matrix:
         """
         ## TODO: Can request two of the same row, which would delete some of the expected column entries. Acceptable?
         return self.rows_(rows).columns_(columns)
-
-    def __getitem__(self, key):
-        return self.matrix[key]
 
     def dot(self, other):
         assert self.rows == 1 or self.columns == 1
@@ -289,7 +348,7 @@ class Matrix:
         """
         Get specified row
         """
-        return Matrix(self.matrix[index])
+        return Matrix(self[index])
 
     @property
     def inverse(self):
@@ -301,14 +360,16 @@ class Matrix:
         or zero division errors. Except the obvious case of zero
         determinant.
         """
-        sign_matrix = self.cofactor_signs
-        minors_matrix = self.minors
-        composed_matrix = sign_matrix.hadamard_multiply( minors_matrix )
-        tranposed = composed_matrix.transpose
-        deter = self.determinant
-        if deter == 0:
-            raise ValueError("Zero determinant implies non-invertible matrix")
-        return (1/deter)*tranposed
+        if self._inverse is None:
+            sign_matrix = self.cofactor_signs
+            minors_matrix = self.minors
+            composed_matrix = sign_matrix.hadamard_multiply( minors_matrix )
+            tranposed = composed_matrix.transpose
+            deter = self.determinant
+            if deter == 0:
+                raise ValueError("Zero determinant implies non-invertible matrix")
+            self._inverse = (1/deter)*tranposed
+        return self._inverse
 
     @property
     def minors(self):
@@ -319,18 +380,22 @@ class Matrix:
         by deleting the row and column containing that element. Replace the element
         with that determinant.
         """
-        new_matrix = Matrices.zeroes(self.rows, self.columns)
-        for i in range(self.rows):
-            for j in range(self.rows):
-                new_matrix.matrix[i][j] = self.submatrix(
-                    [row for row in range(self.rows) if row != i],
-                    [col for col in range(self.columns) if col != j]
-                ).determinant
-        return new_matrix
+        if self._minors is None:
+            new_matrix = Matrices.zeroes(self.rows, self.columns)
+            for i in range(self.rows):
+                for j in range(self.columns):
+                    new_matrix[i][j] = self.submatrix(
+                        [row for row in range(self.rows) if row != i],
+                        [col for col in range(self.columns) if col != j]
+                    ).determinant
+            self._minors = new_matrix
+        return self._minors
 
     @property
     def cofactor_signs(self):
-        return Matrix(*[[(-1) ** (i + j) for i in range(self.rows)] for j in range(self.rows)])
+        if self._cofactor_signs is None:
+            self._cofactor_signs = Matrix(*[[(-1) ** (i + j) for i in range(self.rows)] for j in range(self.rows)])
+        return self._cofactor_signs
 
     @property
     def determinant(self):
@@ -339,48 +404,58 @@ class Matrix:
 
         https://www.youtube.com/watch?v=6-nnxrnnZT8
         """
-        if self.rows == self.columns == 1:
-            return self.matrix[0][0]
-        else:
-            det = 0
-            for index, value in enumerate(self.matrix[0]):
-                cofactor_matrix = self.submatrix(range(1,self.rows), [col for col in range(self.columns) if col != index])
-                det = det + value*(-1)**(index+2)*cofactor_matrix.determinant
-            return det
+        if self._determinant is None:
+            if self.rows == self.columns == 1:
+                self._determinant = self[0][0]
+            else:
+                det = 0
+                for index, value in enumerate(self[0]):
+                    cofactor_matrix = self.submatrix(range(1,self.rows), [col for col in range(self.columns) if col != index])
+                    det = det + value*(-1)**(index+2)*cofactor_matrix.determinant
+                self._determinant = det
+        return self._determinant
 
     @property
     def is_unitary(self):
-        return self * self.adjoint == Matrices.eye(self.rows) and self.is_normal
+        if self._is_unitary is None:
+            self._is_unitary = self * self.adjoint == Matrices.eye(self.rows) and self.is_normal
+        return self._is_unitary
 
     @property
     def is_normal(self):
-        return self*self.adjoint == self.adjoint*self
+        if self._is_normal is None:
+            self._is_normal = self*self.adjoint == self.adjoint*self
+        return self._is_normal
 
     @property
     def adjoint(self):
-        return self.transpose.conjugate
+        if self._adjoint is None:
+            self._adjoint = self.transpose.conjugate
+        return self._adjoint
 
     def column(self, index):
         """
         Get specified column
         """
         count = range(self.rows)
-        return Matrix(*[[self.matrix[i][index]] for i in count])
+        return Matrix(*[[self[i][index]] for i in count])
         
     @property
     def normal(self):
         """
         The normalized version of a row or column vector
         """
-        assert self.rows == 1 or self.columns == 1
-        n = self.norm
-        return 1/n*self
+        if self._normal is None:
+            assert self.rows == 1 or self.columns == 1
+            n = self.norm
+            self._normal = 1/n*self
+        return self._normal
 
     def rows_(self, rows):
         """
         Get rows specified by list
         """
-        return Matrix(*[self.matrix[i] for i in rows])
+        return Matrix(*[self[i] for i in rows])
 
     def columns_(self, columns):
         """
@@ -396,21 +471,82 @@ class Matrix:
 
     @property
     def transpose(self):
-        new_matrix = list()
-        for i in range(self.columns):
-            new_matrix.append([row[i] for row in self.matrix])
-        return Matrix(*new_matrix)
+        if self._tranpose is None:
+            new_matrix = list()
+            for i in range(self.columns):
+                new_matrix.append([row[i] for row in self.matrix])
+            self._tranpose = Matrix(*new_matrix)
+        return self._tranpose
 
-    def __len__(self):
-        return len(self.matrix)
+
+class Vectors:
+    zero = Matrix([1], [0])    
+    zero_zero = Matrix(
+        [1],
+        [0],
+        [0],
+        [0]
+    )
+    one = Matrix(
+        [0],
+        [1]
+    )
+    zero_one = Matrix(
+        [0],
+        [1],
+        [0],
+        [0]
+    )
+    two = Matrix(
+        [0],
+        [0],
+        [1],
+        [0]
+    )
+    three = Matrix(
+        [0],
+        [0],
+        [0],
+        [1]
+    )
+    plus = Matrix(
+        [1 / sqrt(2)],
+        [1 / sqrt(2)]
+    )
+    plus_plus = Matrix(
+        [1 / 2],
+        [1 / 2],
+        [1 / 2],
+        [1 / 2]
+    )
+    minus = Matrix(
+        [1 / sqrt(2)],
+        [-1 / sqrt(2)]
+    )
+    minus_minus = Matrix(
+        [1 / 2],
+        [-1 / 2],
+        [-1 / 2],
+        [1 / 2]
+    )
 
 
-class Operators:    
+class Operators:
+    zero = Vectors.zero % Vectors.zero.transpose
+    one = Vectors.one % Vectors.one.transpose
     DeutschConstant = Matrix(
         [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]
     )
     DeutschBalanced = Matrix(
         [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]
+    )
+    NOT = Matrix(
+        [0, 1],
+        [1, 0]
+    )
+    sqrtNOT = 0.5 * Matrix(
+        [1+Numbers.i, 1-Numbers.i],
+        [1-Numbers.i, 1+Numbers.i]
     )
     PauliX = Matrix(
         [0., 1.],
@@ -472,59 +608,6 @@ class Operators:
     )
 
 
-class Vectors:
-    zero = Matrix([1], [0])    
-    zero_zero = Matrix(
-        [1],
-        [0],
-        [0],
-        [0]
-    )
-    one = Matrix(
-        [0],
-        [1]
-    )
-    zero_one = Matrix(
-        [0],
-        [1],
-        [0],
-        [0]
-    )
-    two = Matrix(
-        [0],
-        [0],
-        [1],
-        [0]
-    )
-    three = Matrix(
-        [0],
-        [0],
-        [0],
-        [1]
-    )
-    plus = Matrix(
-        [1 / sqrt(2)],
-        [1 / sqrt(2)]
-    )
-    plus_plus = Matrix(
-        [1 / 2],
-        [1 / 2],
-        [1 / 2],
-        [1 / 2]
-    )
-    minus = Matrix(
-        [1 / sqrt(2)],
-        [-1 / sqrt(2)]
-    )
-    minus_minus = Matrix(
-        [1 / 2],
-        [-1 / 2],
-        [-1 / 2],
-        [1 / 2]
-    )
-
-
-States = Vectors
 
 class Matrices:
     """
@@ -639,6 +722,62 @@ class Matrices:
         return Matrix(*[[1. if i == j else 0. for i in range(shape)] for j in range(shape)])
 
     @staticmethod
+    def double_controlled(control_bit1, control_bit2, target_bit, operation):
+        """
+        Imagine you want to use bits 1 and 2 to control bit 4 of a 5-qubit register.
+        If the operation to be conditionally executed is U, the appropriate gate is the sum
+
+            00III + 01III + 10III + 11IUI
+
+        where 0 and 1 are the operators |0><0| and |1><1|. Note that the operation is only
+        carried out in the case where both control bits are equal to one, and the identity
+        operation is carried out otherwise.
+
+        TODO: Can this be generalized to higher numbers of control bits? The operator will be
+        a sum of n**2 terms where n is the number of control bits.
+        """
+        part1_ops = list()
+        part2_ops = list()
+        part3_ops = list()
+        part4_ops = list()
+
+        for i in range(max(control_bit1, control_bit2, target_bit)+1):
+            if i == control_bit1:
+                part1_ops.append(Operators.zero)
+                part2_ops.append(Operators.zero)
+                part3_ops.append(Operators.one)
+                part4_ops.append(Operators.one)
+            elif i == control_bit2:
+                part1_ops.append(Operators.zero)
+                part2_ops.append(Operators.one)
+                part3_ops.append(Operators.zero)
+                part4_ops.append(Operators.one)
+            elif i == target_bit:
+                part1_ops.append(Matrices.eye(2))
+                part2_ops.append(Matrices.eye(2))
+                part3_ops.append(Matrices.eye(2))
+                part4_ops.append(operation)
+            else:
+                part1_ops.append(Matrices.eye(2))
+                part2_ops.append(Matrices.eye(2))
+                part3_ops.append(Matrices.eye(2))
+                part4_ops.append(Matrices.eye(2))
+        
+        part1_op = part1_ops[0]
+        part2_op = part2_ops[0]
+        part3_op = part3_ops[0]
+        part4_op = part4_ops[0]
+
+        for i in range(1, len(part1_ops)):
+            part1_op = part1_op % part1_ops[i]
+            part2_op = part2_op % part2_ops[i]
+            part3_op = part3_op % part3_ops[i]
+            part4_op = part4_op % part4_ops[i]
+
+        return part1_op + part2_op + part3_op + part4_op
+
+
+    @staticmethod
     def controlled(control_bit, target_bit, operation):
         """
         Creates the matrix which does the operation of a controlled gate,
@@ -653,27 +792,34 @@ class Matrices:
         :param operation: The operation to be conditionally performed on the target bit.
         :return: a 4x4 controlled unitary matrix
         """
-        part1_ops = list()
-        part2_ops = list()
+        ## If more than one control bit provided, defer to the appropriate method.
+        if isinstance(control_bit, list) or isinstance(control_bit, tuple):
+            op = Matrices.double_controlled(*control_bit, target_bit, operation)
 
-        for i in range(max(control_bit, target_bit) + 1):
-            if i == control_bit:
-                part1_ops.append(Vectors.zero % Vectors.zero.transpose)
-                part2_ops.append(Vectors.one % Vectors.one.transpose)
-            elif i == target_bit:
-                part1_ops.append(Matrices.eye(2))
-                part2_ops.append(operation)
-            else:
-                part1_ops.append(Matrices.eye(2))
-                part2_ops.append(Matrices.eye(2))
+        ## If one control bit passed, build the appropriate gate here.
+        else:
+            part1_ops = list()
+            part2_ops = list()
+
+            for i in range(max(control_bit, target_bit) + 1):
+                if i == control_bit:
+                    part1_ops.append(Vectors.zero % Vectors.zero.transpose)
+                    part2_ops.append(Vectors.one % Vectors.one.transpose)
+                elif i == target_bit:
+                    part1_ops.append(Matrices.eye(2))
+                    part2_ops.append(operation)
+                else:
+                    part1_ops.append(Matrices.eye(2))
+                    part2_ops.append(Matrices.eye(2))
+            
+            part1_op = part1_ops[0]
+            part2_op = part2_ops[0]
+            for i in range(1, len(part1_ops)):
+                part1_op = part1_op % part1_ops[i]
+                part2_op = part2_op % part2_ops[i]
+            
+            op = part1_op + part2_op
         
-        part1_op = part1_ops[0]
-        part2_op = part2_ops[0]
-        for i in range(1, len(part1_ops)):
-            part1_op = part1_op % part1_ops[i]
-            part2_op = part2_op % part2_ops[i]
-        
-        op = part1_op + part2_op
         return op
 
 
@@ -682,8 +828,3 @@ class Matrices:
 
 Vector = Matrix
 
-def round(number, n):
-    if not isinstance(number, complex):
-        return python_round(number, n)
-    else:
-        return round(number.real, n) + round(number.imag, n) * Numbers.i

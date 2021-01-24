@@ -1,4 +1,6 @@
-from operators import Matrix, Matrices, Vectors, Operators
+from operators import Matrix, Matrices, Vectors, Operators, Numbers
+from qmath import exp
+import math
 
 
 def new_entangle_2q():
@@ -109,6 +111,7 @@ def swap_example():
 
 
 def control():
+    ## TODO Flesh this example out some
     register0 = Vectors.zero % Vectors.zero % Vectors.zero
     register1 = Vectors.one % Vectors.zero % Vectors.zero
     op = (Vectors.zero % Vectors.zero.transpose) % Matrices.eye(4) + (Vectors.one % Vectors.one.transpose) % Matrices.eye(2) % Operators.PauliX
@@ -125,25 +128,74 @@ def bellzz():
     operator2 = Matrices.controlled(0, 1, Operators.PauliX)
 
     register3 = operator2 * register2
-    print(register3.measure())
+    return register3.measure()
+
+
+def rng():
+    """
+    Acting the Hadamard on vector |0> gives |0>+|1>, i.e.
+    a 50/50 chance of measuring each basis state.
+    """
+    state = Operators.Hadamard * Vectors.zero
+    result = state.measure()
+    print(result)
+
+
+def grover():
+    register1 = Vectors.zero % Vectors.zero % Vectors.zero
+    operator1 = Operators.Hadamard % Operators.Hadamard % Operators.Hadamard
+
+    register2 = operator1 * register1
+    
+    pass
+
 
 
 print(" Deutsch-Josza algorithm ".center(45, "-"))
-(new_deutsch("constant"))
+results = new_deutsch("constant")
+for result in results:
+    print(result)
 print()
+
 print(" 2-qubit entanglement ".center(45, "-"))
-(new_entangle_2q())
+results = new_entangle_2q()
+for result in results:
+    print(result)
 print()
+
 print(" Create |00> + |11> ".center(45, "-"))
 new_example1()
 print()
+
 print(" Multi-qubit Deutsch-Josza algorithm ".center(45, "-"))
-(new_deutsch_multi("balanced"))
+result = new_deutsch_multi("balanced")
+for each in result:
+    print(each)
 print()
+
 print(" Swapping adjacent qubits ".center(45, "-"))
 swap_example()
+print()
+
+print(" Creating controlled gates ".center(45, "-"))
+control()
+print()
+
+print(" Creating Bell ZZ state ".center(45, "-"))
+results = bellzz()
+for result in results:
+    print(result)
+print()
+
+
+rng()
+
+
 print("-"*45)
 
 
-control()
-bellzz()
+
+X = Operators.PauliX
+phi = 0.5
+val = exp(Numbers.i*phi)
+print(val)

@@ -3,6 +3,19 @@ from operators import Matrix, Matrices, Vectors, Operators, Numbers
 
 
 class MatrixMethods(unittest.TestCase):
+    def test_condense(self):
+        # TODO: Can't test this effectively because I'm not completely
+        # sure what properties a condensed matrix should have!
+        m1 = Matrices.random(5)
+        m2 = m1.condense()
+        vector = Matrices.random(5, 1)
+        print(m1*vector - m2*vector)
+        self.assertEqual(m1*vector, m2*vector)
+
+
+
+
+
     def test_conjugate(self):
         m1 = Matrices.eye(2)
         m2 = Matrices.eye(2)
@@ -115,8 +128,7 @@ class MatrixMethods(unittest.TestCase):
             [0, 5, 1, 0]
         )
         self.assertEqual(m2.determinant, -35)
-        
-
+    
     def test_CNOT(self):
         cnot = Operators.CNOT
         m2 = Vectors.zero_zero

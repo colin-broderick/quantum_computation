@@ -23,23 +23,6 @@ def concat_vert(matrix1, matrix2):
     return [matrix1[row] for row in range(rows(matrix1))] + [matrix2[row] for row in range(rows(matrix2))]
 
 
-def inverse(matrix):
-    """
-    Computes the inverse of a square matrix
-    :param matrix: a square matrix
-    :return: a square matrix
-    """
-    sign_matrix = cofactor_sign_matrix(matrix)
-    minors_matrix = minors(matrix)
-    composed_matrix = hadamard_product(sign_matrix, minors_matrix)
-    transposed_matrix = transpose(composed_matrix)
-    deter = determinant(matrix)
-    if deter == 0:
-        return "Non-invertible"
-    final_matrix = scalar_matrix(1 / deter, transposed_matrix)
-    return final_matrix
-
-
 def hadamard_quotient(matrix1, matrix2):
     """
     Computes the element-wise quotient of two matrices. Can something useful be done in the ZeroDivisionError case?
