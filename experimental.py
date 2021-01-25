@@ -25,7 +25,7 @@ print("zerozerozero", (zero*Vectors.zero).transpose, zero.transpose)
 
 cc124 = zero % zero % I % I  + zero % one % I % I  + one % zero % I % I  + one % one % I % U 
 print(a.transpose)
-print((cc124 * a).transpose, a._tranpose)
+print((cc124 * a).transpose, a.transpose)
 print((cc124 * b).transpose, b.transpose)
 print((cc124 * c).transpose, c.transpose)
 print((cc124 * d).transpose, d.transpose)
@@ -35,3 +35,38 @@ print((a+b+c+e).transpose)
 print()
 print(one*Vectors.zero)
 
+def error():
+    ## We can simulate an error producing operator by writing:
+    ## U = e0 * I + ex * X + ey * Y + ez * Z
+    ## where e0 is presumably large compared to the others, and the others
+    ## represent the amplitude to induce their associated error in the measurement.
+    I = Matrices.eye(2)
+    X = Operators.PauliX
+    Y = Operators.PauliY
+    Z = Operators.PauliZ
+
+    zero = Vectors.zero
+
+    U = (5*I + 1*X )
+    print((zero.normal).measure())
+    print(((U*zero).normal).measure())
+
+
+error()
+
+I = Matrices.eye(2)
+S = Operators.SWAP
+
+U = S % I % I * (I%S%I * (I%I%S * (S%I%I * (I%S%I * (I%I%S)))))
+one = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.one
+two = Vectors.zero % Vectors.zero % Vectors.one % Vectors.zero
+three = Vectors.zero % Vectors.zero % Vectors.one % Vectors.one
+four = Vectors.zero % Vectors.one % Vectors.zero % Vectors.zero
+print(one.measure())
+print(two.measure())
+print(three.measure())
+print(four.measure())
+print(U.is_unitary)
+
+
+print((U*two).measure())

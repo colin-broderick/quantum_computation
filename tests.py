@@ -3,13 +3,13 @@ from operators import Matrix, Matrices, Vectors, Operators, Numbers
 
 
 class MatrixMethods(unittest.TestCase):
-    def test_condense(self):
-        # TODO: Can't test this effectively because I'm not completely
-        # sure what properties a condensed matrix should have!
-        m1 = Matrices.random(5)
-        m2 = m1.condense()
-        vector = Matrices.random(5, 1)
-        self.assertEqual(m1*vector, m2*vector)
+    # def test_condense(self):
+    #     # TODO: Can't test this effectively because I'm not completely
+    #     # sure what properties a condensed matrix should have!
+    #     m1 = Matrices.random(5)
+    #     m2 = m1.condense()
+    #     vector = Matrices.random(5, 1)
+    #     self.assertEqual(m1*vector, m2*vector)
 
     def test_conjugate(self):
         m1 = Matrices.eye(2)
@@ -222,6 +222,20 @@ class MatrixMethods(unittest.TestCase):
         self.assertEqual((cc124 * c), c)
         self.assertEqual((cc124 * d), e)
         self.assertNotEqual((cc124 * d), d)
+
+    def test_amod15(self):
+        ## This operator should compute ((7^2 y) mod 15) where y is the binary value of the input register.
+        _7_2mod15 = Operators.amod15(7, 2)
+
+        one = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.one   ## Should map to |4>
+        two = Vectors.zero % Vectors.zero % Vectors.one % Vectors.zero   ## Should map tp |8>
+        three = Vectors.zero % Vectors.zero % Vectors.one % Vectors.one  ## Should map to |12>
+        four = Vectors.zero % Vectors.one % Vectors.zero % Vectors.zero  ## Should map to |1>
+
+        print((_7_2mod15 * three).measure())
+
+
+
 
     def test_trace(self):
         # TODO: Incomplete

@@ -3,13 +3,6 @@ from qmath import exp, round
 from random import choices, random
 
 
-
-class Untested(Exception):
-    def __init__(self, message="You are trying to use an untested method or function"):
-        # Call the base class constructor with the parameters it needs
-        super().__init__(message)
-
-
 class Numbers:
     i = complex(0, 1)
 
@@ -36,7 +29,7 @@ class Matrix:
         self._is_normal = None
         self._adjoint = None
         self._normal = None
-        self._tranpose = None
+        self._transpose = None
 
     def __str__(self):
         return "\n".join([str(row) for row in self.matrix])
@@ -364,11 +357,11 @@ class Matrix:
             sign_matrix = self.cofactor_signs
             minors_matrix = self.minors
             composed_matrix = sign_matrix.hadamard_multiply( minors_matrix )
-            tranposed = composed_matrix.transpose
+            transposed = composed_matrix.transpose
             deter = self.determinant
             if deter == 0:
                 raise ValueError("Zero determinant implies non-invertible matrix")
-            self._inverse = (1/deter)*tranposed
+            self._inverse = (1/deter)*transposed
         return self._inverse
 
     @property
@@ -471,12 +464,12 @@ class Matrix:
 
     @property
     def transpose(self):
-        if self._tranpose is None:
+        if self._transpose is None:
             new_matrix = list()
             for i in range(self.columns):
                 new_matrix.append([row[i] for row in self.matrix])
-            self._tranpose = Matrix(*new_matrix)
-        return self._tranpose
+            self._transpose = Matrix(*new_matrix)
+        return self._transpose
 
 
 class Vectors:
@@ -606,6 +599,34 @@ class Operators:
         [0, 0, 0, 0, 0, 1, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 1]
     )
+    
+    @staticmethod
+    def amod15(a, power):
+        """
+        The meat of this method is cloned from Qiskit:
+        https://qiskit.org/textbook/ch-algorithms/shor.html
+        TODO: I haven't yet understood why this works or how to generalize it.
+        """
+        S = Operators.SWAP
+        I = Matrices.eye(2)
+        U = Matrices.eye(16)
+        X = Operators.PauliX
+
+        for _ in range(power):
+            if a in [2, 13]:
+                U = S%I%I * U
+                U = I%S%I * U
+                U = I%I%S * U
+            elif a in [7, 8]:
+                U = I%I%S * U
+                U = I%S%I * U
+                U = S%I%I * U                
+            elif a == 11:
+                for __ in range(4):
+                    U = X%X%X%X * U
+
+        return U
+
 
 
 

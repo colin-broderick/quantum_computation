@@ -2,7 +2,6 @@ from operators import Matrix, Matrices, Vectors, Operators, Numbers
 from qmath import exp
 import math
 
-
 def new_entangle_2q():
     """
     This is a simple circuit for creating a maximal entanglement of two qubits.
@@ -150,6 +149,84 @@ def grover():
     pass
 
 
+def shor():
+    zero = Vectors.zero
+    one = Vectors.one
+    H = Operators.Hadamard
+    I = Matrices.eye(2)
+    X = Operators.PauliX
+    p90 = Matrices.phase(math.pi/2)
+    p45 = Matrices.phase(math.pi/4)
+
+    ## Initialize as |0001111>
+    register = zero % zero % zero % one % one % one % one
+
+    ## Hadamards on first three bits, identity on others.
+    operator = H % H % H % I % I % I % I
+    register = operator*register
+
+    ## CNOT(2, 4).
+    operator = I % I % Matrices.controlled(0, 2, X) % I % I
+    register = operator * register
+
+    ## CNOT(2, 5).
+    operator = I % I % Matrices.controlled(0, 3, X) % I
+    register = operator*register
+
+    ## CNOT(3, 5).
+    operator = I % I % I % Matrices.controlled(0, 2, X) % I
+    register = operator*register
+
+    ## CNOT(1, 5, 3).
+    operator = I % Matrices.controlled([0, 4], 2, X)  % I
+    register = operator * register
+
+    ## CNOT(3, 5).
+    operator = I % I % I % Matrices.controlled(0,2,X) % I
+    register = operator* register
+
+    ## CNOT(6, 4).
+    operator = I % I % I % I % Matrices.controlled(2, 0, X)
+    register = operator* register
+
+    ## CNOT(1, 4, 6).
+    operator = I % Matrices.controlled([0,3], 5, X)
+    register = operator*register
+
+    ## CNOT(6, 4).
+    operator = I % I % I % I % Matrices.controlled(2, 0, X)
+    register = operator * register
+
+    ## Hadamard on bit 0, identity otherwise
+    operator = H % I % I % I % I % I % I
+    register = operator * register
+
+    ## Bit-0-controlled 90 degree phase gate on bit 1.
+    operator = Matrices.controlled(0, 1, p90) % I % I % I % I % I
+    register = operator * register
+
+    ## Hadamard on bit 1.
+    operator = I % H % I % I % I % I % I
+    register = operator * register
+
+    ## Bit-0-controlled 45 degree phase gate on bit 2.
+    operator = Matrices.controlled(0, 2, p45) % I % I % I % I
+    register = operator * register
+
+    ## Bit-1-controlled 90 degree phase gate on bit 2.
+    operator = I % Matrices.controlled(0, 1, p90) % I % I % I % I
+    register = operator * register
+
+    ## Hadamard on bit 2.
+    operator = I % I % H % I % I % I % I
+    register = operator * register
+
+    ## Measure!
+    results = register.measure()
+    for result in results:
+        print(result)
+
+
 
 print(" Deutsch-Josza algorithm ".center(45, "-"))
 results = new_deutsch("constant")
@@ -193,9 +270,20 @@ rng()
 
 print("-"*45)
 
-
+shor()
 
 X = Operators.PauliX
 phi = 0.5
 val = exp(Numbers.i*phi)
 print(val)
+
+import matplotlib.pyplot as plt
+results = [0,0 ,0 ,0 , 0, 0, 0, 0,0 ,0 ,0 , 0, 0,0 ,0 ,0 ,0 ,0 , 0, 0, 0,0 ,0 ,0 ,0 ,0 ,0, 0, 0, 0,0 ,0 ,0 ,0 ,0 ,0 ,0 ]
+results[6]=6
+results[9]=6
+results[22]=6
+results[25]=6
+results[15]=25
+results[31]=25
+plt.plot(results)
+plt.show()
