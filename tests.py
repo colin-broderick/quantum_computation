@@ -225,17 +225,60 @@ class MatrixMethods(unittest.TestCase):
 
     def test_amod15(self):
         ## This operator should compute ((7^2 y) mod 15) where y is the binary value of the input register.
-        _7_2mod15 = Operators.amod15(7, 2)
+        _7_2mod15 = Operators.amodn(7, 2, n=15)
 
         one = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.one   ## Should map to |4>
         two = Vectors.zero % Vectors.zero % Vectors.one % Vectors.zero   ## Should map tp |8>
         three = Vectors.zero % Vectors.zero % Vectors.one % Vectors.one  ## Should map to |12>
         four = Vectors.zero % Vectors.one % Vectors.zero % Vectors.zero  ## Should map to |1>
 
-        print((_7_2mod15 * three).measure())
+        self.assertEqual(_7_2mod15 * one, Vectors.binary_vector(4, 4))
+        self.assertEqual(_7_2mod15 * two, Vectors.binary_vector(8, 4))
+        self.assertEqual(_7_2mod15 * three, Vectors.binary_vector(12))
+        self.assertEqual(_7_2mod15 * four, Vectors.binary_vector(1, 4))
 
+    def test_binary_vector(self):
+        zer = Vectors.binary_vector(0)
+        one = Vectors.binary_vector(1)
+        two = Vectors.binary_vector(2)
+        thr = Vectors.binary_vector(3)
+        fou = Vectors.binary_vector(4)
+        fiv = Vectors.binary_vector(5)
+        
+        zer_r = Vectors.zero
+        one_r = Vectors.one
+        two_r = Vectors.one % Vectors.zero
+        thr_r = Vectors.one % Vectors.one
+        fou_r = Vectors.one % Vectors.zero % Vectors.zero
+        fiv_r = Vectors.one % Vectors.zero % Vectors.one
 
+        self.assertEqual(zer, zer_r)
+        self.assertEqual(one, one_r)
+        self.assertEqual(two, two_r)
+        self.assertEqual(thr, thr_r)
+        self.assertEqual(fou, fou_r)
+        self.assertEqual(fiv, fiv_r)
 
+        zer_7 = Vectors.binary_vector(0, 7)
+        one_7 = Vectors.binary_vector(1, 7)
+        two_7 = Vectors.binary_vector(2, 7)
+        thr_7 = Vectors.binary_vector(3, 7)
+        fou_7 = Vectors.binary_vector(4, 7)
+        fiv_7 = Vectors.binary_vector(5, 7)
+
+        zer_7r = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero
+        one_7r = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.one
+        two_7r = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.one % Vectors.zero
+        thr_7r = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.one % Vectors.one
+        fou_7r = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.one % Vectors.zero % Vectors.zero
+        fiv_7r = Vectors.zero % Vectors.zero % Vectors.zero % Vectors.zero % Vectors.one % Vectors.zero % Vectors.one
+
+        self.assertEqual(zer_7, zer_7r)
+        self.assertEqual(one_7, one_7r)
+        self.assertEqual(two_7, two_7r)
+        self.assertEqual(thr_7, thr_7r)
+        self.assertEqual(fou_7, fou_7r)
+        self.assertEqual(fiv_7, fiv_7r)
 
     def test_trace(self):
         # TODO: Incomplete

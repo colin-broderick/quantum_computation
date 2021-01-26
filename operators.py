@@ -523,6 +523,34 @@ class Vectors:
         [1 / 2]
     )
 
+    @staticmethod
+    def binary_vector(value, qubits=None):
+        ## TODO Implement this.
+        ## Creates a vector of the binary |n>.
+        ## If 'qubits' is not specified, the vector will be the smallest vector which can contain that binary number.
+        ## If 'qubits' is specified, the vector will pad zeros to acheive that length.
+        ops = list()
+        bin_string = "{0:b}".format(value)
+
+        if qubits is not None:
+            while len(bin_string) < qubits:
+                bin_string = "0" + bin_string
+
+        for ch in bin_string:
+            if ch == "0":
+                ops.append(Vectors.zero)
+            elif ch == "1":
+                ops.append(Vectors.one)
+
+        vector = ops[0]
+        for op in ops[1:]:
+            vector = vector % op
+
+        return vector
+
+
+        
+
 
 class Operators:
     zero = Vectors.zero % Vectors.zero.transpose
@@ -601,26 +629,26 @@ class Operators:
     )
     
     @staticmethod
-    def amod15(a, power):
+    def amodn(a, power, n=15):
         """
         The meat of this method is cloned from Qiskit:
         https://qiskit.org/textbook/ch-algorithms/shor.html
-        TODO: I haven't yet understood why this works or how to generalize it.
+        TODO: I haven't yet understood why this works or how to generalize it to larger n.
         """
         S = Operators.SWAP
         I = Matrices.eye(2)
-        U = Matrices.eye(16)
+        U = Matrices.eye(2**4)
         X = Operators.PauliX
 
         for _ in range(power):
             if a in [2, 13]:
-                U = S%I%I * U
-                U = I%S%I * U
-                U = I%I%S * U
+                U = S%I%I * U     # swap(0, 1)
+                U = I%S%I * U     # swap(1, 2)
+                U = I%I%S * U     # swap(2, 3)
             elif a in [7, 8]:
-                U = I%I%S * U
-                U = I%S%I * U
-                U = S%I%I * U                
+                U = I%I%S * U     # swap(2, 3)
+                U = I%S%I * U     # swap(1, 2)
+                U = S%I%I * U     # swap(0, 1)
             elif a == 11:
                 for __ in range(4):
                     U = X%X%X%X * U
@@ -762,6 +790,8 @@ class Matrices:
         part3_ops = list()
         part4_ops = list()
 
+        op_size = int(log(operation.rows, 2))
+
         for i in range(max(control_bit1, control_bit2, target_bit)+1):
             if i == control_bit1:
                 part1_ops.append(Operators.zero)
@@ -774,10 +804,11 @@ class Matrices:
                 part3_ops.append(Operators.zero)
                 part4_ops.append(Operators.one)
             elif i == target_bit:
-                part1_ops.append(Matrices.eye(2))
-                part2_ops.append(Matrices.eye(2))
-                part3_ops.append(Matrices.eye(2))
+                part1_ops.append(Matrices.eye(operation.rows))
+                part2_ops.append(Matrices.eye(operation.rows))
+                part3_ops.append(Matrices.eye(operation.rows))
                 part4_ops.append(operation)
+                i = i + op_size
             else:
                 part1_ops.append(Matrices.eye(2))
                 part2_ops.append(Matrices.eye(2))
@@ -813,6 +844,8 @@ class Matrices:
         :param operation: The operation to be conditionally performed on the target bit.
         :return: a 4x4 controlled unitary matrix
         """
+        ## TODO: Modify this to control operators on more than one qubit.
+
         ## If more than one control bit provided, defer to the appropriate method.
         if isinstance(control_bit, list) or isinstance(control_bit, tuple):
             op = Matrices.double_controlled(*control_bit, target_bit, operation)
@@ -822,13 +855,16 @@ class Matrices:
             part1_ops = list()
             part2_ops = list()
 
+            op_size = int(log(operation.rows, 2))
+
             for i in range(max(control_bit, target_bit) + 1):
                 if i == control_bit:
                     part1_ops.append(Vectors.zero % Vectors.zero.transpose)
                     part2_ops.append(Vectors.one % Vectors.one.transpose)
                 elif i == target_bit:
-                    part1_ops.append(Matrices.eye(2))
+                    part1_ops.append(Matrices.eye(operation.rows))
                     part2_ops.append(operation)
+                    i = i + op_size
                 else:
                     part1_ops.append(Matrices.eye(2))
                     part2_ops.append(Matrices.eye(2))
