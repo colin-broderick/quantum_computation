@@ -1,6 +1,7 @@
 from operators import Matrix, Matrices, Vectors, Operators, Numbers
 from qmath import exp
 import math
+import time
 
 def new_entangle_2q():
     """
@@ -150,6 +151,78 @@ def grover():
 
 
 def shor():
+    H = Operators.Hadamard
+    I = Matrices.eye(2)
+    X = Operators.PauliX
+
+    print("Generating QFT")
+    QFT = Matrices.qft(2**8)
+    
+    print("Inverting QFT")
+    start = time.time()
+    QFTi = QFT.inverse
+    print("QFT inverse took", time.time()-start, "seconds")
+
+    print("Generting amodn operators")
+    start = time.time()
+    _7_1_mod15 = Operators.amodn(7, 1)
+    _7_2_mod15 = Operators.amodn(7, 2)
+    _7_4_mod15 = Operators.amodn(7, 4)
+    _7_8_mod15 = Operators.amodn(7, 8)
+    _7_16_mod15 = Operators.amodn(7, 16)
+    _7_32_mod15 = Operators.amodn(7, 32)
+    _7_64_mod15 = Operators.amodn(7, 64)
+    _7_128_mod15 = Operators.amodn(7, 128)
+    print("Generating amodn operators took", time.time()-start, "seconds")
+
+    print("Generating initial register")
+    start = time.time()
+    register = Vectors.binary_vector(0, 12)
+    print("Generating initial register took", time.time()-start, "seconds")
+    
+    print("Building and applying first operator")
+    start = time.time()
+    operator = H
+    for _ in range(1, 8):
+        operator = operator % H
+    for _ in range(3):
+        operator = operator % I
+    operator = operator % X
+    register = operator * register
+    print("Building and applying first operator took", time.time()-start, "seconds")
+
+    print("Generating and applying controlled unitaries")
+    start = time.time()
+    register = Matrices.controlled(0, 8, _7_1_mod15)*register
+    print("--", time.time()-start)
+    register = Matrices.controlled(1, 8, _7_2_mod15)*register
+    print("--", time.time()-start)
+    register = Matrices.controlled(2, 8, _7_4_mod15)*register
+    print("--", time.time()-start)
+    register = Matrices.controlled(3, 8, _7_8_mod15)*register
+    print("--", time.time()-start)
+    register = Matrices.controlled(4, 8, _7_16_mod15)*register
+    print("--", time.time()-start)
+    register = Matrices.controlled(5, 8, _7_32_mod15)*register
+    print("--", time.time()-start)
+    register = Matrices.controlled(6, 8, _7_64_mod15)*register
+    print("--", time.time()-start)
+    register = Matrices.controlled(7, 8, _7_128_mod15)*register
+    print("--", time.time()-start)
+    print("Generating and applying controlled unitaries took", time.time()-start, "seconds")
+
+    operator = QFTi % I % I % I % I
+    register = operator * register
+
+    results = register.measure()
+    for result in results:
+        print(result)
+
+
+    
+
+
+def shor_wrong():
     zero = Vectors.zero
     one = Vectors.one
     H = Operators.Hadamard
@@ -271,19 +344,3 @@ rng()
 print("-"*45)
 
 shor()
-
-X = Operators.PauliX
-phi = 0.5
-val = exp(Numbers.i*phi)
-print(val)
-
-import matplotlib.pyplot as plt
-results = [0,0 ,0 ,0 , 0, 0, 0, 0,0 ,0 ,0 , 0, 0,0 ,0 ,0 ,0 ,0 , 0, 0, 0,0 ,0 ,0 ,0 ,0 ,0, 0, 0, 0,0 ,0 ,0 ,0 ,0 ,0 ,0 ]
-results[6]=6
-results[9]=6
-results[22]=6
-results[25]=6
-results[15]=25
-results[31]=25
-plt.plot(results)
-plt.show()

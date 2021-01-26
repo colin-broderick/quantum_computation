@@ -525,7 +525,6 @@ class Vectors:
 
     @staticmethod
     def binary_vector(value, qubits=None):
-        ## TODO Implement this.
         ## Creates a vector of the binary |n>.
         ## If 'qubits' is not specified, the vector will be the smallest vector which can contain that binary number.
         ## If 'qubits' is specified, the vector will pad zeros to acheive that length.
@@ -546,10 +545,7 @@ class Vectors:
         for op in ops[1:]:
             vector = vector % op
 
-        return vector
-
-
-        
+        return vector  
 
 
 class Operators:
