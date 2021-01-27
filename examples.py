@@ -17,7 +17,6 @@ def new_entangle_2q():
 
     register2 = Operators.CNOT * register1
 
-    return register2
 
 
 
@@ -44,16 +43,16 @@ def new_deutsch(kind):
 
 
 
-def new_example1():
-    state = new_entangle_2q()
-    print("Chance of measuring |00>: ", end="")
-    print(state.pvm(Matrix([1], [0], [0], [0])))
-    print("Chance of measuring |01>: ", end="")
-    print(state.pvm(Matrix([0], [1], [0], [0])))
-    print("Chance of measuring |10>: ", end="")
-    print(state.pvm(Matrix([0], [0], [1], [0])))
-    print("Chance of measuring |11>: ", end="")
-    print(state.pvm(Matrix([0], [0], [0], [1])))
+# def new_example1():
+#     state = new_entangle_2q()
+#     print("Chance of measuring |00>: ", end="")
+#     print(state.pvm(Matrix([1], [0], [0], [0])))
+#     print("Chance of measuring |01>: ", end="")
+#     print(state.pvm(Matrix([0], [1], [0], [0])))
+#     print("Chance of measuring |10>: ", end="")
+#     print(state.pvm(Matrix([0], [0], [1], [0])))
+#     print("Chance of measuring |11>: ", end="")
+#     print(state.pvm(Matrix([0], [0], [0], [1])))
 
 
 def new_deutsch_multi(kind):
@@ -160,7 +159,7 @@ def shor():
     
     print("Inverting QFT")
     start = time.time()
-    QFTi = QFT.inverse
+    # QFTi = QFT.inverse
     print("QFT inverse took", time.time()-start, "seconds")
 
     print("Generting amodn operators")
@@ -211,7 +210,7 @@ def shor():
     print("--", time.time()-start)
     print("Generating and applying controlled unitaries took", time.time()-start, "seconds")
 
-    operator = QFTi % I % I % I % I
+    operator = QFT % I % I % I % I
     register = operator * register
 
     results = register.measure()
@@ -307,15 +306,15 @@ for result in results:
     print(result)
 print()
 
-print(" 2-qubit entanglement ".center(45, "-"))
-results = new_entangle_2q()
-for result in results:
-    print(result)
-print()
+# print(" 2-qubit entanglement ".center(45, "-"))
+# results = new_entangle_2q()
+# for result in results:
+#     print(result)
+# print()
 
-print(" Create |00> + |11> ".center(45, "-"))
-new_example1()
-print()
+# print(" Create |00> + |11> ".center(45, "-"))
+# new_example1()
+# print()
 
 print(" Multi-qubit Deutsch-Josza algorithm ".center(45, "-"))
 result = new_deutsch_multi("balanced")

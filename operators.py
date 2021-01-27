@@ -1,6 +1,7 @@
 from math import sqrt, isclose, sin, cos, pi, log
 from qmath import exp, round
 from random import choices, random
+import multiprocessing
 
 
 class Numbers:
@@ -241,12 +242,12 @@ class Matrix:
 
     def measure(self):
         density = self.density_matrix
-        probabilities = list()
+        # probabilities = list()
         possibles = density.states
         for each in possibles:
             prob = self.pvm(each)
-            probabilities.append(f"Probability of measuring state |{str(each.matrix.index([1]))}> is {round(prob.real*100,1)}%.")
-        return probabilities
+            yield f"Probability of measuring state |{str(each.matrix.index([1]))}> is {round(prob.real*100,1)}%."
+        # return probabilities
 
     def hadamard_multiply(self, other):
         """
@@ -644,7 +645,7 @@ class Operators:
             elif a in [7, 8]:
                 U = I%I%S * U     # swap(2, 3)
                 U = I%S%I * U     # swap(1, 2)
-                U = S%I%I * U     # swap(0, 1)
+                U = S%I%I * U     #                          swap(0, 1)
             elif a == 11:
                 for __ in range(4):
                     U = X%X%X%X * U
