@@ -1,5 +1,5 @@
 from math import sqrt, isclose, sin, cos, pi, log
-from qmath import exp, round
+from qmath import exp, round, absargmax
 from random import choices, random
 import multiprocessing
 
@@ -63,7 +63,7 @@ class Matrix:
             [A21, A22]       [B21, B22]
 
             A kron B = [A11.B, A12.B] = [A11.B11, A11.B12, A12.B11, A12.B12]
-                    [A21.B, A22.B]   [A11.B21, A11.B22, A12.B21, A12.B22]
+                       [A21.B, A22.B]   [A11.B21, A11.B22, A12.B21, A12.B22]
                                         [A21.B11, A21.B12, A22.B11, A22.B12]
                                         [A21.B21, A21.B22, A22.B21, A22.B22]
 
@@ -207,9 +207,39 @@ class Matrix:
     def eigenvalues(self):
         raise NotImplementedError
 
-    @property
-    def eigenvectors(self):
-        raise NotImplementedError
+    def eigenvectors(self, method="power-convergence", iters=100, tol=1e-9):
+        if method == "power-convergence":
+            """
+            This method finds only one eigenvector and rests on two assumptions:
+            1) The candidate vector has a non-zero component in the direction of the eigenvector.
+            2) One of the eigenvalues is has strictly larger magnitude than the others.
+
+            The first is hopefully assured by starting with a sufficiently random candidate vector.
+            
+            The second is likely for sufficiently random matrices, but is likely to fail for regular
+            matrices, where by regular I mean clear structure like ([1,0],[0,-1]).
+            """
+
+            ## Create a candidate eigenvector which is hopefully sufficiently random
+            ## that is has a non-zero component in the direction of the eigenvector.
+            b = Matrix(*[[random()] for _ in range(len(self))])
+
+            length = len(b)
+
+            ## Do M*b/norm(M*b) until convergence.
+            for index in range(iters):
+                c = (self*b).normal
+                diff = c - b
+                tols = [abs(diff[i][0]) < tol for i in range(length)]
+                if all(tols):
+                    maxval = absargmax(c.matrix)[1]
+                    print(f"Converged in {index} steps")
+                    return c/maxval
+                else:
+                    b = c
+            
+            raise ValueError("Eigenvector sequence failed to converge when using power-convergence algorithm - try a different algorithm")
+        
 
     def swap_rows(self, row1, row2):
         """

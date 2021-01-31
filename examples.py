@@ -42,7 +42,6 @@ def new_deutsch(kind):
     return result
 
 
-
 # def new_example1():
 #     state = new_entangle_2q()
 #     print("Chance of measuring |00>: ", end="")
@@ -121,12 +120,13 @@ def control():
 
 def bellzz():
     register1 = Vectors.zero % Vectors.zero
+    
     operator1 = Operators.Hadamard % Matrices.eye(2)
     register2 = operator1 * register1
 
     operator2 = Matrices.controlled(0, 1, Operators.PauliX)
-
     register3 = operator2 * register2
+
     return register3.measure()
 
 
@@ -218,9 +218,6 @@ def shor():
         print(result)
 
 
-    
-
-
 def shor_wrong():
     zero = Vectors.zero
     one = Vectors.one
@@ -299,7 +296,6 @@ def shor_wrong():
         print(result)
 
 
-
 print(" Deutsch-Josza algorithm ".center(45, "-"))
 results = new_deutsch("constant")
 for result in results:
@@ -343,3 +339,4 @@ rng()
 print("-"*45)
 
 shor()
+
