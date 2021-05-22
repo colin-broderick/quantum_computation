@@ -2,6 +2,7 @@ from math import sqrt, isclose, sin, cos, pi, log
 from qmath import exp, round, absargmax
 from random import choices, random
 import multiprocessing
+import numpy as np
 
 
 class Numbers:
@@ -104,7 +105,8 @@ class Matrix:
         if isinstance(other, Matrix):
             if not (self.columns == other.rows):
                 raise ValueError("Multiplied matrices with incompatible dimension")
-            return Matrix(*[[sum(x * other[i][col] for i,x in enumerate(row)) for col in range(len(other[0]))] for row in self.matrix])
+            # return Matrix(*[[sum(x * other[i][col] for i,x in enumerate(row)) for col in range(len(other[0]))] for row in self.matrix])
+            return Matrix(*(np.matmul(self, other).tolist()))
 
     def __rtruediv__(self, other):
         """

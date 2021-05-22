@@ -214,8 +214,9 @@ def shor():
     register = operator * register
 
     results = register.measure()
-    for result in results:
-        print(result)
+    with open("results.txt", "w") as f:
+        for result in results:
+            f.write(result)
 
 
 def shor_wrong():
